@@ -2,6 +2,15 @@
 
 在线录音 + 图片上传 + 二维码声纹打印工具：在浏览器中录音，手机扫码上传图片，生成二维码和波形图，通过新窗口预览 148mm×100mm 明信片并打印。
 
+**GitHub 仓库：** https://github.com/YinLiuLiu66/saytopic
+
+## 获取代码
+
+```bash
+git clone https://github.com/YinLiuLiu66/saytopic.git
+cd saytopic
+```
+
 ## 技术栈
 
 | 层 | 技术 |

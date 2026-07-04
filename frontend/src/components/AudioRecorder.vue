@@ -312,7 +312,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-width: 420px;
+  max-width: 560px;
   margin: 0 auto;
   position: relative;
 }
@@ -357,10 +357,10 @@ onUnmounted(() => {
 
 .dome-label {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
   color: white;
-  letter-spacing: 6px;
+  letter-spacing: 8px;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
@@ -370,11 +370,11 @@ onUnmounted(() => {
   background: var(--bg-card);
   border: 3px solid var(--primary-300);
   border-top: none;
-  padding: 32px 28px;
+  padding: 40px 36px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 28px;
   position: relative;
   box-shadow: var(--shadow-lg);
 }
@@ -442,8 +442,8 @@ onUnmounted(() => {
 /* 录音中脉冲 */
 .pulse-container {
   position: relative;
-  width: 100px;
-  height: 100px;
+  width: 120px;
+  height: 120px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -466,15 +466,15 @@ onUnmounted(() => {
 }
 
 .mic-icon {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   color: var(--primary-500);
   z-index: 1;
 }
 
 .mic-icon.idle {
-  width: 64px;
-  height: 64px;
+  width: 76px;
+  height: 76px;
   color: var(--primary-400);
   animation: mic-float 3s ease-in-out infinite;
 }
@@ -531,9 +531,9 @@ onUnmounted(() => {
 
 .audio-preview {
   width: 100%;
-  max-width: 340px;
-  height: 40px;
-  border-radius: 20px;
+  max-width: 440px;
+  height: 44px;
+  border-radius: 22px;
 }
 
 /* ===== 计时器 ===== */
@@ -547,7 +547,7 @@ onUnmounted(() => {
 
 .timer-display {
   font-family: var(--font-mono);
-  font-size: 42px;
+  font-size: 52px;
   font-weight: 700;
   color: var(--primary-600);
   letter-spacing: 4px;
@@ -591,10 +591,10 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 28px;
+  padding: 16px 36px;
   border: none;
   border-radius: var(--radius-full);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -715,8 +715,13 @@ onUnmounted(() => {
 
 /* ===== 响应式 ===== */
 @media (max-width: 480px) {
+  .recorder {
+    max-width: 420px;
+  }
+
   .booth-body {
     padding: 24px 16px;
+    gap: 24px;
   }
 
   .dome-label {
@@ -724,8 +729,28 @@ onUnmounted(() => {
     letter-spacing: 4px;
   }
 
+  .pulse-container {
+    width: 100px;
+    height: 100px;
+  }
+
+  .mic-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .mic-icon.idle {
+    width: 64px;
+    height: 64px;
+  }
+
   .timer-display {
     font-size: 32px;
+  }
+
+  .audio-preview {
+    max-width: 340px;
+    height: 40px;
   }
 
   .record-btn,

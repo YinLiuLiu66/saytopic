@@ -113,8 +113,7 @@ onUnmounted(() => {
           </svg>
           <span>声音家书</span>
         </div>
-        <h1 class="hero-title">听见心声</h1>
-        <h2 class="hero-subtitle">传递感恩</h2>
+        <h1 class="hero-title">立德思源，感恩笃行</h1>
         <p class="hero-desc">
           录下你的感恩之声，生成专属二维码明信片，让声音穿越时空温暖人心
         </p>
@@ -312,21 +311,12 @@ onUnmounted(() => {
 
 .hero-title {
   font-family: var(--font-display);
-  font-size: 48px;
+  font-size: 40px;
   font-weight: 700;
   color: var(--neutral-800);
   margin: 0;
-  line-height: 1.1;
-  letter-spacing: 2px;
-}
-
-.hero-subtitle {
-  font-family: var(--font-display);
-  font-size: 32px;
-  font-weight: 400;
-  color: var(--primary-500);
-  margin: 8px 0 0;
-  line-height: 1.2;
+  line-height: 1.3;
+  letter-spacing: 6px;
 }
 
 .hero-desc {
@@ -532,11 +522,8 @@ onUnmounted(() => {
   }
 
   .hero-title {
-    font-size: 36px;
-  }
-
-  .hero-subtitle {
-    font-size: 24px;
+    font-size: 28px;
+    letter-spacing: 4px;
   }
 
   .hero-desc {

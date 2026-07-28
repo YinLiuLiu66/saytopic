@@ -8,8 +8,37 @@ const filename = computed(() => route.params.filename)
 const audioUrl = computed(() => `/api/audio/${filename.value}`)
 const playUrl = computed(() => window.location.href)
 const showPage = ref(false)
+const playCount = ref(null)
+const counted = ref(false)
+
+async function loadPlayCount() {
+  try {
+    const res = await fetch(`/api/audio/${filename.value}/stats`)
+    if (!res.ok) return
+    const data = await res.json()
+    if (!counted.value) playCount.value = data.play_count
+  } catch (e) {
+    console.error('Failed to load play count:', e)
+  }
+}
+
+async function recordPlay() {
+  if (counted.value) return
+  counted.value = true
+
+  try {
+    const res = await fetch(`/api/audio/${filename.value}/play`, { method: 'POST' })
+    if (!res.ok) throw new Error('Failed to record play')
+    const data = await res.json()
+    playCount.value = data.play_count
+  } catch (e) {
+    counted.value = false
+    console.error('Failed to record play:', e)
+  }
+}
 
 onMounted(() => {
+  loadPlayCount()
   setTimeout(() => { showPage.value = true }, 100)
 })
 </script>
@@ -67,8 +96,12 @@ onMounted(() => {
 
           <!-- 播放器 -->
           <div class="audio-player">
-            <audio controls :src="audioUrl" class="audio-element"></audio>
+            <audio controls :src="audioUrl" class="audio-element" @play="recordPlay"></audio>
           </div>
+
+          <p v-if="playCount !== null" class="listen-count" aria-live="polite">
+            这段声音已被聆听 {{ playCount }} 次
+          </p>
 
           <!-- 提示文字 -->
           <div class="play-hint">
@@ -300,6 +333,13 @@ onMounted(() => {
   width: 100%;
   height: 48px;
   border-radius: 24px;
+}
+
+.listen-count {
+  margin: -8px 24px 16px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--primary-600);
 }
 
 /* 播放提示 */

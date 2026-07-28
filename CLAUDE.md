@@ -68,17 +68,17 @@
 
 ## 项目速览
 
-在线录音 + 图片上传 + 二维码声纹打印：Vue 3 (Vite, :5173) ↔ FastAPI (Python, :8000)。
+用户名录音管理 + 图片上传 + 二维码声纹打印：Vue 3 (Vite, :5173) ↔ FastAPI (Python, :8000)。
 
 ## 目录结构
 
 ```
-backend/main.py        # FastAPI: POST /api/upload, POST /api/upload-image (可选 audio_filename 参数), GET /api/audio/{filename}, GET/HEAD /api/image/{filename}
-backend/uploads/       # 录音和图片文件存储（gitignore，UUID 命名）
+backend/main.py        # FastAPI: 上传/读取音频与图片、用户名录音列表、播放次数
+backend/uploads/       # 录音、图片和含归属/计数数据的 stats.sqlite3（gitignore）
 frontend/src/          # Vue 3 应用
-  router/index.js      # / → HomeView, /play/:filename → PlayView, /upload-image/:audioFilename → ImageUploadView
-  views/               # HomeView（录音+电脑拍照/扫码上传+轮询同步+QR+波形+打印）, PlayView（音频播放）, ImageUploadView（手机端图片上传）
-  components/          # AudioRecorder（录音）, CameraCapture（电脑拍照）, ImageUploader（图片上传，仅手机端）, WaveformCanvas（Canvas）, QrCodeCard（音频QR+波形+打印）
+  router/index.js      # /、/mine、/play/:filename、/upload-image/:audioFilename
+  views/               # HomeView（用户名+创作）, MyRecordingsView（用户录音）, PlayView（公开播放）, ImageUploadView（手机图片上传）
+  components/          # AudioRecorder（录音）, CameraCapture（电脑拍照）, WaveformCanvas（Canvas）, QrCodeCard（音频QR+波形+打印）
   assets/              # global.css（CSS 变量/字体）
 ```
 
@@ -86,11 +86,13 @@ frontend/src/          # Vue 3 应用
 
 - **后端端口** `8000`，**前端端口** `5173`，不得冲突
 - **Vite 代理**：`/api` → `http://localhost:8000`，前端 fetch 用相对路径
-- **录音格式**：优先 mp4（iOS 兼容），其次 webm/ogg
+- **录音格式**：浏览器优先使用 `audio/mp4`，上传时保存为 `.m4a`（iOS 兼容），其次为 `.webm` / `.ogg`；后端也接受 `.mp3` / `.wav`
 - **图片格式**：支持 jpg/jpeg、png、webp，最大 10MB
 - **UUID 重命名**：录音和图片文件以 `uuid4().hex + 扩展名` 存入 `uploads/`
 - **文件关联**：图片与音频一对一关联，文件名相同（扩展名不同）
-- **CORS**：允许 `localhost:5173` 和公网域名（内网穿透时需添加穿透域名）
+- **播放计数**：播放页每次访问仅在首次实际播放时计数，数据存入 `uploads/stats.sqlite3`
+- **用户名身份**：仅用 1–40 字符用户名关联和查询录音；同名即同一身份，不提供密码或访问控制
+- **CORS / 穿透域名**：当前允许 `http://localhost:5173` 与 `https://frp-off.com:23506`；新增访问域名时，同时更新后端 CORS 和 Vite `allowedHosts`
 
 ## 启动命令
 
@@ -99,5 +101,9 @@ frontend/src/          # Vue 3 应用
 cd backend && uv run uvicorn main:app --port 8000
 
 # 前端
-cd frontend && npm run dev -- --host 0.0.0.0
+cd frontend && pnpm dev --host 0.0.0.0
+
+# 验证
+cd frontend && pnpm build
+cd backend && uv run python -m unittest test_stats.py
 ```

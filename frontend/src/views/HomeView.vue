@@ -5,6 +5,8 @@ import AudioRecorder from '../components/AudioRecorder.vue'
 import CameraCapture from '../components/CameraCapture.vue'
 import QrCodeCard from '../components/QrCodeCard.vue'
 
+const username = ref(localStorage.getItem('saytopic_username') || '')
+const usernameInput = ref('')
 const audioUrl = ref('')
 const filename = ref('')
 const imageUrl = ref('')
@@ -19,6 +21,26 @@ const imageUploadPath = computed(() => {
   const base = filename.value.replace(/\.[^.]+$/, '')
   return `${window.location.origin}/upload-image/${base}`
 })
+
+function saveUsername() {
+  const value = usernameInput.value.trim()
+  if (!value || value.length > 40) return
+  username.value = value
+  usernameInput.value = ''
+  localStorage.setItem('saytopic_username', value)
+}
+
+function switchUsername() {
+  stopPolling()
+  localStorage.removeItem('saytopic_username')
+  username.value = ''
+  audioUrl.value = ''
+  filename.value = ''
+  imageUrl.value = ''
+  imageUploaded.value = false
+  showUploadQr.value = false
+  uploadQrDataUrl.value = ''
+}
 
 function onAudioUploaded({ url, filename: name }) {
   audioUrl.value = url
@@ -119,9 +141,36 @@ onUnmounted(() => {
         </p>
       </header>
 
+      <section class="section owner-card">
+        <form v-if="!username" class="owner-form" @submit.prevent="saveUsername">
+          <div>
+            <h2 class="owner-title">先留下你的名字</h2>
+            <p class="owner-desc">之后可以用同一用户名查看自己的录音和播放次数</p>
+          </div>
+          <div class="owner-actions">
+            <input
+              v-model="usernameInput"
+              class="owner-input"
+              maxlength="40"
+              placeholder="请输入用户名"
+              aria-label="用户名"
+              required
+            />
+            <button class="owner-primary" type="submit">进入创作</button>
+          </div>
+        </form>
+        <div v-else class="owner-session">
+          <p>当前用户：<strong>{{ username }}</strong></p>
+          <div class="owner-session-actions">
+            <RouterLink class="owner-link" to="/mine">我的录音</RouterLink>
+            <button class="owner-switch" type="button" @click="switchUsername">切换用户</button>
+          </div>
+        </div>
+      </section>
+
       <!-- 录音区域 -->
-      <section class="section recorder-section">
-        <AudioRecorder @uploaded="onAudioUploaded" />
+      <section v-if="username" class="section recorder-section">
+        <AudioRecorder :owner-name="username" @uploaded="onAudioUploaded" />
       </section>
 
       <!-- 图片上传二维码区域（可选） -->
@@ -375,6 +424,80 @@ onUnmounted(() => {
   margin: 0;
 }
 
+/* ===== 用户身份 ===== */
+.owner-card {
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--primary-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.owner-form,
+.owner-session {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.owner-title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  color: var(--neutral-700);
+}
+
+.owner-desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--neutral-500);
+}
+
+.owner-actions,
+.owner-session-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.owner-input {
+  width: 180px;
+  padding: 10px 12px;
+  border: 1px solid var(--neutral-300);
+  border-radius: var(--radius-sm);
+  color: var(--neutral-700);
+}
+
+.owner-input:focus {
+  outline: 2px solid var(--primary-300);
+  border-color: var(--primary-400);
+}
+
+.owner-primary,
+.owner-link {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--primary-500);
+  color: white;
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.owner-session {
+  font-size: 14px;
+  color: var(--neutral-600);
+}
+
+.owner-switch {
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--neutral-500);
+  font-size: 13px;
+}
+
 /* ===== 图片上传区域 ===== */
 .image-section {
   animation: section-appear 0.5s ease-out;
@@ -532,6 +655,25 @@ onUnmounted(() => {
 
   .section-header {
     gap: 10px;
+  }
+
+  .owner-form,
+  .owner-session {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .owner-actions {
+    flex-direction: column;
+  }
+
+  .owner-input,
+  .owner-primary {
+    width: 100%;
+  }
+
+  .owner-session-actions {
+    justify-content: space-between;
   }
 
   .upload-options {

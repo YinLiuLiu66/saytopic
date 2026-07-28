@@ -1,6 +1,10 @@
 <script setup>
 import { ref, onUnmounted, computed } from 'vue'
 
+const props = defineProps({
+  ownerName: { type: String, required: true },
+})
+
 const emit = defineEmits(['uploaded'])
 
 const recording = ref(false)
@@ -122,6 +126,7 @@ async function uploadRecording() {
 
     const formData = new FormData()
     formData.append('file', file)
+    formData.append('owner_name', props.ownerName)
 
     const res = await fetch('/api/upload', {
       method: 'POST',
@@ -130,7 +135,7 @@ async function uploadRecording() {
 
     if (!res.ok) {
       const data = await res.json()
-      throw new Error(data.error || 'Upload failed')
+      throw new Error(data.detail || 'Upload failed')
     }
 
     const data = await res.json()

@@ -177,7 +177,8 @@ async def upload_image(file: UploadFile = File(...), audio_filename: Optional[st
     return {"url": f"/api/image/{unique_name}", "filename": unique_name}
 
 
-@app.api_route("/api/image/{filename}", methods=["GET", "HEAD"])
+@app.get("/api/image/{filename}")
+@app.head("/api/image/{filename}")
 async def get_image(filename: str):
     file_path = os.path.join(UPLOAD_DIR, filename)
     if not os.path.isfile(file_path):

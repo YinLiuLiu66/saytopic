@@ -29,6 +29,7 @@ cd backend && uv run python -m unittest test_stats.py
 ## 不可变约定
 
 - 后端使用 `8000`，前端使用 `5173`；前端经 Vite 将 `/api` 代理到 `http://localhost:8000`，请求使用相对路径。
+- 麦克风和摄像头依赖浏览器安全上下文：同机开发可用 `http://localhost:5173`，局域网或公网访问必须使用 HTTPS。
 - 音频上传文件名使用 UUID；浏览器优先使用 `audio/mp4`，上传后扩展名为 `.m4a`，也支持 `.webm`、`.ogg`、`.mp3`、`.wav`。
 - 图片只接受 jpg/jpeg、png、webp，最大 10MB；关联图片使用音频同名基名。
 - 当前允许的跨域来源为 `http://localhost:5173` 和 `https://frp-off.com:23506`；新增域名时同步更新 FastAPI CORS 与 Vite `allowedHosts`。

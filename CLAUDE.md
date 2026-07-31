@@ -86,6 +86,7 @@ frontend/src/          # Vue 3 应用
 
 - **后端端口** `8000`，**前端端口** `5173`，不得冲突
 - **Vite 代理**：`/api` → `http://localhost:8000`，前端 fetch 用相对路径
+- **安全上下文**：麦克风和摄像头在同机开发时可用 `http://localhost:5173`；局域网或公网访问必须使用 HTTPS
 - **录音格式**：浏览器优先使用 `audio/mp4`，上传时保存为 `.m4a`（iOS 兼容），其次为 `.webm` / `.ogg`；后端也接受 `.mp3` / `.wav`
 - **图片格式**：支持 jpg/jpeg、png、webp，最大 10MB
 - **UUID 重命名**：录音和图片文件以 `uuid4().hex + 扩展名` 存入 `uploads/`

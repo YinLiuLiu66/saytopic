@@ -24,7 +24,7 @@ cd backend && uv run python -m unittest test_stats.py
 
 - 前端：Vue 3、Vite、vue-router、qrcode，源代码在 `frontend/src/`。
 - 后端：FastAPI，入口在 `backend/main.py`；上传内容存入被 Git 忽略的 `backend/uploads/`。
-- 用户与接口说明以 `README.md` 为准；实现细节以 `docs/开发文档.md` 为准。
+- 用户与接口说明以 `README.md` 为准；实现细节以 `docs/开发文档.md` 为准；Debian 上线与运维以 `docs/部署文档.md` 为准。
 
 ## 不可变约定
 

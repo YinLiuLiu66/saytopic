@@ -48,7 +48,8 @@ saytopic/
 │   │   └── assets/      # global.css
 │   └── vite.config.js   # Vue 插件 + /api 代理
 └── docs/
-    └── 开发文档.md       # 完整架构、接口与实现说明
+    ├── 开发文档.md       # 完整架构、接口与实现说明
+    └── 部署文档.md       # Debian + Nginx + systemd 部署说明
 ```
 
 ## 开发环境 URL
@@ -77,6 +78,8 @@ saytopic/
 
 ## 内网穿透
 
-使用樱花 frp 等工具穿透前端端口（5173），Vite 会自动代理 `/api` 到后端。新增穿透域名时，需同时更新 `backend/main.py` 的 CORS 配置和 `frontend/vite.config.js` 的 `allowedHosts`。
+开发联调时可以使用樱花 frp 等工具穿透 Vite 前端端口（5173），Vite 会自动代理 `/api` 到后端。新增开发穿透域名时，需同时更新 `backend/main.py` 的 CORS 配置和 `frontend/vite.config.js` 的 `allowedHosts`。
 
 浏览器只允许网页在安全上下文中访问麦克风和摄像头：同一台电脑可使用 `http://localhost:5173`，通过局域网 IP 或公网访问时必须使用 HTTPS，否则录音或拍照会提示无法获取权限。
+
+正式环境不使用 Vite 开发服务器，frp 应转发到 Nginx。Debian 上线步骤见 [部署文档](docs/部署文档.md)。

@@ -1,10 +1,6 @@
 <script setup>
 import { ref, onUnmounted, computed } from 'vue'
 
-const props = defineProps({
-  ownerName: { type: String, required: true },
-})
-
 const emit = defineEmits(['uploaded'])
 
 const recording = ref(false)
@@ -126,7 +122,6 @@ async function uploadRecording() {
 
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('owner_name', props.ownerName)
 
     const res = await fetch('/api/upload', {
       method: 'POST',
@@ -148,6 +143,7 @@ async function uploadRecording() {
 }
 
 function resetRecording() {
+  if (audioUrl.value) URL.revokeObjectURL(audioUrl.value)
   recorded.value = false
   audioBlob.value = null
   audioUrl.value = ''
@@ -158,6 +154,7 @@ function resetRecording() {
 onUnmounted(() => {
   stopStream()
   if (timerInterval) clearInterval(timerInterval)
+  if (audioUrl.value) URL.revokeObjectURL(audioUrl.value)
 })
 </script>
 

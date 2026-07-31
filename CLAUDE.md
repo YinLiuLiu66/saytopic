@@ -68,16 +68,16 @@
 
 ## 项目速览
 
-用户名录音管理 + 图片上传 + 二维码声纹打印：Vue 3 (Vite, :5173) ↔ FastAPI (Python, :8000)。
+共享电脑录音与明信片打印 + 手机用户名已听统计：Vue 3 (Vite, :5173) ↔ FastAPI (Python, :8000)。
 
 ## 目录结构
 
 ```
-backend/main.py        # FastAPI: 上传/读取音频与图片、用户名录音列表、播放次数
-backend/uploads/       # 录音、图片和含归属/计数数据的 stats.sqlite3（gitignore）
+backend/main.py        # FastAPI: 上传/读取音频与图片、个人已听统计
+backend/uploads/       # 录音、图片和已听数据 stats.sqlite3（gitignore）
 frontend/src/          # Vue 3 应用
   router/index.js      # /、/mine、/play/:filename、/upload-image/:audioFilename
-  views/               # HomeView（用户名+创作）, MyRecordingsView（用户录音）, PlayView（公开播放）, ImageUploadView（手机图片上传）
+  views/               # HomeView（共享创作）, MyStatsView（个人统计）, PlayView（手机播放）, ImageUploadView（手机图片上传）
   components/          # AudioRecorder（录音）, CameraCapture（电脑拍照）, WaveformCanvas（Canvas）, QrCodeCard（音频QR+波形+打印）
   assets/              # global.css（CSS 变量/字体）
 ```
@@ -90,9 +90,14 @@ frontend/src/          # Vue 3 应用
 - **图片格式**：支持 jpg/jpeg、png、webp，最大 10MB
 - **UUID 重命名**：录音和图片文件以 `uuid4().hex + 扩展名` 存入 `uploads/`
 - **文件关联**：图片与音频一对一关联，文件名相同（扩展名不同）
-- **播放计数**：播放页每次访问仅在首次实际播放时计数，数据存入 `uploads/stats.sqlite3`
-- **用户名身份**：仅用 1–40 字符用户名关联和查询录音；同名即同一身份，不提供密码或访问控制
 - **CORS / 穿透域名**：当前允许 `http://localhost:5173` 与 `https://frp-off.com:23506`；新增访问域名时，同时更新后端 CORS 和 Vite `allowedHosts`
+
+## 业务硬规则
+
+- 共享电脑录音不使用用户名，打印窗口关闭后仅重置页面状态
+- 手机用户名保存在 `localStorage`，区分大小写、无密码；播放即记录，同一录音按用户名去重
+- 播放页显示个人已听数量并进入 `/mine`；`/mine` 只提供个人统计和可长按保存的凭证图片
+- 系统不维护录音归属列表、单条累计播放次数或录音浏览入口；服务器录音与图片继续保留
 
 ## 启动命令
 

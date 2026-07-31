@@ -1,6 +1,6 @@
 # SayTopic
 
-在线录音 + 图片上传 + 二维码声纹打印工具：使用用户名创建和查看自己的录音，手机扫码上传图片，生成二维码和波形图，通过新窗口预览 148mm×100mm 明信片并打印；扫码播放页公开显示录音被聆听的次数。
+共享电脑录音 + 可选图片上传 + 二维码声纹明信片打印工具；用户扫码播放录音，并通过手机用户名累计自己听过的不同录音数量。
 
 **GitHub 仓库：** https://github.com/YinLiuLiu66/saytopic
 
@@ -36,14 +36,14 @@ pnpm dev --host 0.0.0.0
 ```
 saytopic/
 ├── backend/
-│   ├── main.py          # FastAPI 入口（上传 / 用户录音 / 播放计数 / 文件服务 / CORS）
+│   ├── main.py          # FastAPI 入口（上传 / 已听统计 / 文件服务 / CORS）
 │   ├── pyproject.toml   # Python 依赖
-│   └── uploads/         # 录音、图片和归属/计数数据库（gitignore）
+│   └── uploads/         # 录音、图片和已听统计数据库（gitignore）
 ├── frontend/
 │   ├── src/
 │   │   ├── main.js      # 入口（挂载 Router）
-│   │   ├── router/      # 首页、我的录音、播放页和手机图片上传页
-│   │   ├── views/       # HomeView, MyRecordingsView, PlayView, ImageUploadView
+│   │   ├── router/      # 创作页、个人统计、播放页和手机图片上传页
+│   │   ├── views/       # HomeView, MyStatsView, PlayView, ImageUploadView
 │   │   ├── components/  # AudioRecorder, CameraCapture, WaveformCanvas, QrCodeCard
 │   │   └── assets/      # global.css
 │   └── vite.config.js   # Vue 插件 + /api 代理
@@ -60,17 +60,20 @@ saytopic/
 | 音频上传接口 | POST /api/upload |
 | 图片上传接口 | POST /api/upload-image |
 | 音频文件 | GET /api/audio/{filename} |
-| 播放次数 | GET /api/audio/{filename}/stats |
-| 记录播放 | POST /api/audio/{filename}/play |
-| 用户录音 | GET /api/recordings?owner_name={username} |
+| 已听统计 | GET /api/listening-stats?username={username} |
+| 记录已听 | POST /api/audio/{filename}/play?username={username} |
 | 图片文件 | GET /api/image/{filename} |
 | 播放页面 | http://localhost:5173/play/{filename} |
 | 图片上传页面 | http://localhost:5173/upload-image/{audioFilename} |
-| 我的录音 | http://localhost:5173/mine |
+| 我的统计 | http://localhost:5173/mine |
 
 ## 用户名身份
 
-首页输入的用户名保存在当前浏览器中，新录音会关联该用户名；“我的录音”页面按用户名展示录音和播放次数。该功能不包含密码或真实认证，任何人输入相同用户名都会看到同一份录音列表。
+用户名只在手机播放页和个人统计页使用，并保存在该手机的 `localStorage`。用户名区分大小写，不包含密码或真实认证；任何设备输入相同用户名都会共享同一份已听数据。同一用户名重复播放同一录音只计一条。
+
+## 共享电脑流程
+
+共享电脑无需输入用户名。打印对话框关闭后，网页会清空本次录音和图片并回到初始状态，但服务器文件继续保留，确保明信片二维码长期可用。
 
 ## 内网穿透
 

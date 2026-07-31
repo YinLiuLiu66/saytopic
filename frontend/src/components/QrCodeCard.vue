@@ -1,7 +1,9 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import QRCode from 'qrcode'
 import WaveformCanvas from './WaveformCanvas.vue'
+
+const emit = defineEmits(['printed'])
 
 const props = defineProps({
   audioUrl: { type: String, required: true },
@@ -166,12 +168,18 @@ function print() {
       <img src="${audioQrDataUrl.value}" alt="音频二维码" />
     </div>
   </div>
-  <button class="print-btn" onclick="window.print()">
+  <button class="print-btn" onclick="window.print(); window.opener?.postMessage('saytopic-print-finished', '${window.location.origin}'); window.close()">
     打印明信片
   </button>
 </body>
 </html>`)
   win.document.close()
+}
+
+function handlePrintFinished(event) {
+  if (event.origin === window.location.origin && event.data === 'saytopic-print-finished') {
+    emit('printed')
+  }
 }
 
 watch(() => props.filename, () => {
@@ -181,9 +189,14 @@ watch(() => props.filename, () => {
 })
 
 onMounted(() => {
+  window.addEventListener('message', handlePrintFinished)
   buildUrls()
   generateQrCodes()
   setTimeout(() => { showCard.value = true }, 300)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('message', handlePrintFinished)
 })
 </script>
 

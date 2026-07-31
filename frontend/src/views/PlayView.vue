@@ -6,31 +6,54 @@ import WaveformCanvas from '../components/WaveformCanvas.vue'
 const route = useRoute()
 const filename = computed(() => route.params.filename)
 const audioUrl = computed(() => `/api/audio/${filename.value}`)
-const playUrl = computed(() => window.location.href)
 const showPage = ref(false)
-const playCount = ref(null)
+const listenedCount = ref(null)
 const counted = ref(false)
+const username = ref(localStorage.getItem('saytopic_username') || '')
+const usernameInput = ref('')
 
-async function loadPlayCount() {
+function saveUsername() {
+  const value = usernameInput.value.trim()
+  if (!value || value.length > 40) return
+  username.value = value
+  usernameInput.value = ''
+  localStorage.setItem('saytopic_username', value)
+  loadListenedCount()
+}
+
+function switchUsername() {
+  localStorage.removeItem('saytopic_username')
+  username.value = ''
+  listenedCount.value = null
+  counted.value = false
+}
+
+async function loadListenedCount() {
+  if (!username.value) return
+
   try {
-    const res = await fetch(`/api/audio/${filename.value}/stats`)
+    const encodedUsername = encodeURIComponent(username.value)
+    const res = await fetch(`/api/listening-stats?username=${encodedUsername}`)
     if (!res.ok) return
     const data = await res.json()
-    if (!counted.value) playCount.value = data.play_count
+    if (!counted.value) listenedCount.value = data.listened_count
   } catch (e) {
-    console.error('Failed to load play count:', e)
+    console.error('Failed to load listened count:', e)
   }
 }
 
 async function recordPlay() {
-  if (counted.value) return
+  if (counted.value || !username.value) return
   counted.value = true
 
   try {
-    const res = await fetch(`/api/audio/${filename.value}/play`, { method: 'POST' })
+    const encodedUsername = encodeURIComponent(username.value)
+    const res = await fetch(`/api/audio/${filename.value}/play?username=${encodedUsername}`, {
+      method: 'POST',
+    })
     if (!res.ok) throw new Error('Failed to record play')
     const data = await res.json()
-    playCount.value = data.play_count
+    listenedCount.value = data.listened_count
   } catch (e) {
     counted.value = false
     console.error('Failed to record play:', e)
@@ -38,7 +61,7 @@ async function recordPlay() {
 }
 
 onMounted(() => {
-  loadPlayCount()
+  loadListenedCount()
   setTimeout(() => { showPage.value = true }, 100)
 })
 </script>
@@ -94,13 +117,34 @@ onMounted(() => {
             <WaveformCanvas :audio-url="audioUrl" :height="100" :width="460" color-theme="primary" />
           </div>
 
+          <form v-if="!username" class="listener-login" @submit.prevent="saveUsername">
+            <p>输入用户名后开始聆听</p>
+            <div>
+              <input
+                v-model="usernameInput"
+                maxlength="40"
+                placeholder="请输入用户名"
+                aria-label="用户名"
+                required
+              />
+              <button type="submit">确认</button>
+            </div>
+          </form>
+          <div v-else class="listener-session">
+            <span>当前听众：<strong>{{ username }}</strong></span>
+            <div class="listener-actions">
+              <RouterLink to="/mine">我的统计</RouterLink>
+              <button type="button" @click="switchUsername">切换</button>
+            </div>
+          </div>
+
           <!-- 播放器 -->
-          <div class="audio-player">
+          <div v-if="username" class="audio-player">
             <audio controls :src="audioUrl" class="audio-element" @play="recordPlay"></audio>
           </div>
 
-          <p v-if="playCount !== null" class="listen-count" aria-live="polite">
-            这段声音已被聆听 {{ playCount }} 次
+          <p v-if="listenedCount !== null" class="listen-count" aria-live="polite">
+            你已经听过 {{ listenedCount }} 条录音
           </p>
 
           <!-- 提示文字 -->
@@ -329,6 +373,59 @@ onMounted(() => {
   padding: 20px 24px;
 }
 
+.listener-login,
+.listener-session {
+  margin: 0 24px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--primary-100);
+  text-align: center;
+}
+
+.listener-login p {
+  margin: 0 0 10px;
+  color: var(--neutral-600);
+}
+
+.listener-login div {
+  display: flex;
+  gap: 8px;
+}
+
+.listener-login input {
+  min-width: 0;
+  flex: 1;
+  padding: 9px 12px;
+  border: 1px solid var(--primary-300);
+  border-radius: var(--radius-md);
+}
+
+.listener-login button,
+.listener-session button,
+.listener-session a {
+  border: 0;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  background: var(--primary-500);
+  color: white;
+}
+
+.listener-session a {
+  text-decoration: none;
+}
+
+.listener-session {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--neutral-600);
+}
+
+.listener-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .audio-element {
   width: 100%;
   height: 48px;
@@ -394,6 +491,16 @@ onMounted(() => {
 
   .audio-player {
     padding: 16px;
+  }
+
+  .listener-session,
+  .listener-login div {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .listener-actions {
+    justify-content: center;
   }
 }
 </style>

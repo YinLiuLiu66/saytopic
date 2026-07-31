@@ -46,92 +46,49 @@ def _database_connection(db_path=STATS_DB):
     connection = sqlite3.connect(db_path)
     connection.execute(
         """
-        CREATE TABLE IF NOT EXISTS audio_stats (
-            filename TEXT PRIMARY KEY,
-            play_count INTEGER NOT NULL DEFAULT 0
-        )
-        """
-    )
-    connection.execute(
-        """
-        CREATE TABLE IF NOT EXISTS recordings (
-            filename TEXT PRIMARY KEY,
+        CREATE TABLE IF NOT EXISTS listened_recordings (
             owner_name TEXT NOT NULL,
-            created_at TEXT NOT NULL DEFAULT (
-                strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
-            )
+            filename TEXT NOT NULL,
+            PRIMARY KEY (owner_name, filename)
         )
         """
     )
     return connection
 
 
-def _get_play_count(filename: str, db_path=STATS_DB) -> int:
-    with _database_connection(db_path) as connection:
-        row = connection.execute(
-            "SELECT play_count FROM audio_stats WHERE filename = ?",
-            (filename,),
-        ).fetchone()
-    return row[0] if row else 0
-
-
-def _increment_play_count(filename: str, db_path=STATS_DB) -> int:
+def _record_listen(filename: str, username: str, db_path=STATS_DB) -> int:
     with _database_connection(db_path) as connection:
         connection.execute(
             """
-            INSERT INTO audio_stats (filename, play_count)
-            VALUES (?, 1)
-            ON CONFLICT(filename) DO UPDATE SET play_count = play_count + 1
+            INSERT OR IGNORE INTO listened_recordings (owner_name, filename)
+            VALUES (?, ?)
             """,
-            (filename,),
+            (username, filename),
         )
         row = connection.execute(
-            "SELECT play_count FROM audio_stats WHERE filename = ?",
-            (filename,),
+            "SELECT COUNT(*) FROM listened_recordings WHERE owner_name = ?",
+            (username,),
         ).fetchone()
     return row[0]
 
 
-def _save_recording(filename: str, owner_name: str, db_path=STATS_DB) -> None:
+def _get_listened_count(username: str, db_path=STATS_DB) -> int:
     with _database_connection(db_path) as connection:
-        connection.execute(
-            "INSERT INTO recordings (filename, owner_name) VALUES (?, ?)",
-            (filename, owner_name),
-        )
+        row = connection.execute(
+            "SELECT COUNT(*) FROM listened_recordings WHERE owner_name = ?",
+            (username,),
+        ).fetchone()
+    return row[0]
 
 
-def _list_recordings(owner_name: str, db_path=STATS_DB) -> list[dict]:
-    with _database_connection(db_path) as connection:
-        rows = connection.execute(
-            """
-            SELECT recordings.filename, recordings.created_at,
-                   COALESCE(audio_stats.play_count, 0)
-            FROM recordings
-            LEFT JOIN audio_stats USING (filename)
-            WHERE recordings.owner_name = ?
-            ORDER BY recordings.created_at DESC
-            """,
-            (owner_name,),
-        ).fetchall()
-    return [
-        {
-            "filename": filename,
-            "url": f"/api/audio/{filename}",
-            "created_at": created_at,
-            "play_count": play_count,
-        }
-        for filename, created_at, play_count in rows
-    ]
-
-
-def _require_owner_name(owner_name: str) -> str:
-    owner_name = owner_name.strip()
-    if not owner_name or len(owner_name) > 40:
+def _require_username(username: str) -> str:
+    username = username.strip()
+    if not username or len(username) > 40:
         raise HTTPException(
             status_code=400,
             detail="Username must be between 1 and 40 characters",
         )
-    return owner_name
+    return username
 
 
 def _require_audio(filename: str) -> str:
@@ -145,14 +102,10 @@ def _require_audio(filename: str) -> str:
 
 
 @app.post("/api/upload")
-async def upload_audio(
-    file: UploadFile = File(...),
-    owner_name: str = Form(...),
-):
+async def upload_audio(file: UploadFile = File(...)):
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
 
-    owner_name = _require_owner_name(owner_name)
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in ALLOWED_AUDIO_EXTENSIONS:
         raise HTTPException(
@@ -166,7 +119,6 @@ async def upload_audio(
     content = await file.read()
     with open(file_path, "wb") as f:
         f.write(content)
-    _save_recording(unique_name, owner_name)
 
     return {"url": f"/api/audio/{unique_name}", "filename": unique_name}
 
@@ -180,22 +132,17 @@ async def get_audio(filename: str):
     return FileResponse(file_path, media_type=media_type)
 
 
-@app.get("/api/audio/{filename}/stats")
-async def get_audio_stats(filename: str):
-    _require_audio(filename)
-    return {"play_count": _get_play_count(filename)}
-
-
 @app.post("/api/audio/{filename}/play")
-async def record_audio_play(filename: str):
+async def record_audio_play(filename: str, username: str):
     _require_audio(filename)
-    return {"play_count": _increment_play_count(filename)}
+    username = _require_username(username)
+    return {"listened_count": _record_listen(filename, username)}
 
 
-@app.get("/api/recordings")
-async def list_recordings(owner_name: str):
-    owner_name = _require_owner_name(owner_name)
-    return {"recordings": _list_recordings(owner_name)}
+@app.get("/api/listening-stats")
+async def get_listening_stats(username: str):
+    username = _require_username(username)
+    return {"listened_count": _get_listened_count(username)}
 
 
 @app.post("/api/upload-image")

@@ -22,7 +22,7 @@ cd backend && uv run python -m unittest test_stats.py
 
 ## 技术与目录
 
-- 前端：Vue 3、Vite、vue-router、qrcode，源代码在 `frontend/src/`。
+- 前端：Vue 3、Vite、vue-router、qrcode、jspdf，源代码在 `frontend/src/`。
 - 后端：FastAPI，入口在 `backend/main.py`；上传内容存入被 Git 忽略的 `backend/uploads/`。
 - 用户与接口说明以 `README.md` 为准；实现细节以 `docs/开发文档.md` 为准；Debian 上线与运维以 `docs/部署文档.md` 为准。
 
@@ -37,7 +37,7 @@ cd backend && uv run python -m unittest test_stats.py
 ## 业务约定
 
 - 完整业务合同见 `docs/开发文档.md` 的“业务流程”。
-- 共享电脑录音时不输入或保存用户名；打印窗口关闭后只重置浏览器页面，服务器文件继续保留。
+- 共享电脑录音时不输入或保存用户名；打印版 PDF 打开后只重置浏览器页面，服务器文件继续保留。
 - 手机播放前必须有用户名；用户名保存在手机 `localStorage`、区分大小写、无密码，同名共享数据。
 - 个人已听数量按“用户名 + 录音文件名”去重；系统不维护录音归属列表或单条录音累计播放次数。
 - `/mine` 是个人统计与凭证图片页面；播放页提供入口，不提供录音浏览列表。

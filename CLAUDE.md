@@ -78,7 +78,7 @@ backend/uploads/       # 录音、图片和已听数据 stats.sqlite3（gitignor
 frontend/src/          # Vue 3 应用
   router/index.js      # /、/mine、/play/:filename、/upload-image/:audioFilename
   views/               # HomeView（共享创作）, MyStatsView（个人统计）, PlayView（手机播放）, ImageUploadView（手机图片上传）
-  components/          # AudioRecorder（录音）, CameraCapture（电脑拍照）, WaveformCanvas（Canvas）, QrCodeCard（音频QR+波形+打印）
+  components/          # AudioRecorder（录音）, CameraCapture（电脑拍照）, WaveformCanvas（Canvas）, QrCodeCard（音频QR+波形+PDF打印）
   assets/              # global.css（CSS 变量/字体）
 ```
 
@@ -89,13 +89,13 @@ frontend/src/          # Vue 3 应用
 - **安全上下文**：麦克风和摄像头在同机开发时可用 `http://localhost:5173`；局域网或公网访问必须使用 HTTPS
 - **录音格式**：浏览器优先使用 `audio/mp4`，上传时保存为 `.m4a`（iOS 兼容），其次为 `.webm` / `.ogg`；后端也接受 `.mp3` / `.wav`
 - **图片格式**：支持 jpg/jpeg、png、webp，最大 10MB
-- **UUID 重命名**：录音和图片文件以 `uuid4().hex + 扩展名` 存入 `uploads/`
+- **UUID 重命名**：录音以 `uuid4().hex + 扩展名` 存入 `uploads/`；关联图片使用音频同名基名
 - **文件关联**：图片与音频一对一关联，文件名相同（扩展名不同）
 - **CORS / 穿透域名**：当前允许 `http://localhost:5173` 与 `https://frp-off.com:23506`；新增访问域名时，同时更新后端 CORS 和 Vite `allowedHosts`
 
 ## 业务硬规则
 
-- 共享电脑录音不使用用户名，打印窗口关闭后仅重置页面状态
+- 共享电脑录音不使用用户名，打印版 PDF 打开后仅重置页面状态
 - 手机用户名保存在 `localStorage`，区分大小写、无密码；播放即记录，同一录音按用户名去重
 - 播放页显示个人已听数量并进入 `/mine`；`/mine` 只提供个人统计和可长按保存的凭证图片
 - 系统不维护录音归属列表、单条累计播放次数或录音浏览入口；服务器录音与图片继续保留

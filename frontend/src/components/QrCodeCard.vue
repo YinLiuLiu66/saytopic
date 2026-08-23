@@ -122,13 +122,15 @@ async function print() {
     const qrPadding = width * 0.04
 
     ctx.drawImage(background, 0, 0, width, height)
-    if (photo) drawCover(ctx, photo, photoX, photoY, photoWidth, photoHeight)
-    ctx.save()
-    ctx.strokeStyle = 'rgba(70,130,180,0.6)'
-    ctx.lineWidth = width * 0.0036
-    ctx.setLineDash([width * 0.014, width * 0.009])
-    ctx.strokeRect(photoX, photoY, photoWidth, photoHeight)
-    ctx.restore()
+    if (photo) {
+      drawCover(ctx, photo, photoX, photoY, photoWidth, photoHeight)
+      ctx.save()
+      ctx.strokeStyle = 'rgba(70,130,180,0.6)'
+      ctx.lineWidth = width * 0.0036
+      ctx.setLineDash([width * 0.014, width * 0.009])
+      ctx.strokeRect(photoX, photoY, photoWidth, photoHeight)
+      ctx.restore()
+    }
     drawContain(ctx, waveform, waveformX, waveformY, waveformWidth, waveformHeight)
     ctx.fillStyle = 'white'
     ctx.fillRect(qrX, qrY, qrWidth, qrWidth)

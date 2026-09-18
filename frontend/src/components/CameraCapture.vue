@@ -59,6 +59,9 @@ async function capture() {
     canvas.height = video.videoHeight
 
     const ctx = canvas.getContext('2d')
+    // 预览使用镜像画面，成片同样镜像，保证所见即所得
+    ctx.translate(canvas.width, 0)
+    ctx.scale(-1, 1)
     ctx.drawImage(video, 0, 0)
 
     canvas.toBlob(async (blob) => {
@@ -180,6 +183,7 @@ async function uploadCapturedImage(blob) {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transform: scaleX(-1);
 }
 
 .camera-placeholder {

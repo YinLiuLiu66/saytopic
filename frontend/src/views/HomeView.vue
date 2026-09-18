@@ -564,10 +564,19 @@ onUnmounted(() => {
   justify-content: center;
   align-self: center;
   flex-shrink: 0;
-  width: 40px;
+  width: 48px;
 }
 
 .divider-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, var(--primary-100), var(--primary-200));
+  border: 1px solid var(--primary-300);
+  box-shadow: 0 2px 8px rgba(90, 180, 217, 0.25);
   font-size: 20px;
   font-weight: 600;
   color: #000;

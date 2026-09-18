@@ -132,7 +132,6 @@ onMounted(() => {
                 <input
                   type="file"
                   accept="image/jpeg,image/jpg,image/png,image/webp"
-                  capture="environment"
                   @change="handleFileSelect"
                   class="file-input"
                   id="mobile-image-input"

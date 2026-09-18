@@ -12,15 +12,24 @@ const canvasRef = ref(null)
 let audioContext = null
 
 const themes = {
+  // 配合明信片新底图：底图虚线框与寄语横线的深宝蓝色，背景透明
+  card: {
+    line: '#1E35B0',
+    fill: 'rgba(30, 53, 176, 0.12)',
+    bg: 'transparent',
+    midLine: 'rgba(30, 53, 176, 0.25)',
+  },
   primary: {
     line: '#5AB4D9',
     fill: 'rgba(168, 216, 234, 0.15)',
     bg: 'rgba(232, 244, 252, 0.3)',
+    midLine: 'rgba(168, 216, 234, 0.2)',
   },
   coral: {
     line: '#FC8181',
     fill: 'rgba(252, 129, 129, 0.15)',
     bg: 'rgba(254, 215, 215, 0.3)',
+    midLine: 'rgba(252, 129, 129, 0.2)',
   },
 }
 
@@ -60,7 +69,7 @@ async function draw() {
 
     // 中线
     ctx.beginPath()
-    ctx.strokeStyle = 'rgba(168, 216, 234, 0.2)'
+    ctx.strokeStyle = theme.midLine
     ctx.lineWidth = 1
     ctx.setLineDash([4, 4])
     ctx.moveTo(0, amp)

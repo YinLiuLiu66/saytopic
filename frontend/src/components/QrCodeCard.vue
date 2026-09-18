@@ -16,6 +16,31 @@ const playUrl = ref('')
 const showCard = ref(false)
 const waveformRef = ref(null)
 
+// 明信片各区域在底图中的位置（百分比），HTML 预览与打印 PDF 共用这一份坐标
+const CARD_REGIONS = {
+  photo: { left: 12.664, top: 20.833, width: 27.138, height: 45.037 },
+  waveform: { left: 51.85, top: 58.8, width: 41.94, height: 11.5 },
+  qr: { left: 51.85, top: 29.04, width: 15.83, height: 23.16 },
+}
+
+function regionStyle(region) {
+  return {
+    left: `${region.left}%`,
+    top: `${region.top}%`,
+    width: `${region.width}%`,
+    height: `${region.height}%`,
+  }
+}
+
+function regionRect(region, width, height) {
+  return {
+    x: (region.left / 100) * width,
+    y: (region.top / 100) * height,
+    width: (region.width / 100) * width,
+    height: (region.height / 100) * height,
+  }
+}
+
 const fullImageUrl = computed(() => {
   if (!props.imageUrl) return ''
   return props.imageUrl.startsWith('http')
@@ -32,7 +57,7 @@ async function generateQrCodes() {
   try {
     if (playUrl.value) {
       audioQrDataUrl.value = await QRCode.toDataURL(playUrl.value, {
-        width: 200,
+        width: 400,
         margin: 2,
         color: { dark: '#2D3748', light: '#ffffff' },
       })
@@ -49,25 +74,6 @@ function loadImage(url) {
     image.onerror = () => reject(new Error('图片加载失败'))
     image.src = url
   })
-}
-
-function drawCover(ctx, image, x, y, width, height) {
-  const sourceWidth = image.naturalWidth || image.width
-  const sourceHeight = image.naturalHeight || image.height
-  const scale = Math.max(width / sourceWidth, height / sourceHeight)
-  const cropWidth = width / scale
-  const cropHeight = height / scale
-  ctx.drawImage(
-    image,
-    (sourceWidth - cropWidth) / 2,
-    (sourceHeight - cropHeight) / 2,
-    cropWidth,
-    cropHeight,
-    x,
-    y,
-    width,
-    height,
-  )
 }
 
 function drawContain(ctx, image, x, y, width, height) {
@@ -96,7 +102,7 @@ async function print() {
     if (!waveform || !audioQrDataUrl.value) throw new Error('明信片内容尚未准备好')
 
     const [background, qr, photo] = await Promise.all([
-      loadImage(`${window.location.origin}/mingxinpian.png`),
+      loadImage(`${window.location.origin}/mingxinpian.jpg`),
       loadImage(audioQrDataUrl.value),
       fullImageUrl.value ? loadImage(fullImageUrl.value) : Promise.resolve(null),
     ])
@@ -108,36 +114,28 @@ async function print() {
 
     const width = canvas.width
     const height = canvas.height
-    const photoX = width * 0.122
-    const photoY = height * 0.15
-    const photoWidth = width * 0.28
-    const photoHeight = height * 0.53
-    const waveformX = width * 0.11
-    const waveformY = height * 0.67
-    const waveformWidth = width * 0.28
-    const waveformHeight = height * 0.16
-    const qrWidth = width * 0.18
-    const qrX = width - width * 0.225 - qrWidth
-    const qrY = height * 0.33
-    const qrPadding = width * 0.04
+    const photoRect = regionRect(CARD_REGIONS.photo, width, height)
+    const waveformRect = regionRect(CARD_REGIONS.waveform, width, height)
+    const qrRect = regionRect(CARD_REGIONS.qr, width, height)
+    // 二维码四周留出白边，保证静区不被底图灰块压到
+    const qrPadding = qrRect.width * 0.04
 
     ctx.drawImage(background, 0, 0, width, height)
     if (photo) {
-      drawCover(ctx, photo, photoX, photoY, photoWidth, photoHeight)
-      ctx.save()
-      ctx.strokeStyle = 'rgba(70,130,180,0.6)'
-      ctx.lineWidth = width * 0.0036
-      ctx.setLineDash([width * 0.014, width * 0.009])
-      ctx.strokeRect(photoX, photoY, photoWidth, photoHeight)
-      ctx.restore()
+      // 完整显示照片，不裁切
+      drawContain(ctx, photo, photoRect.x, photoRect.y, photoRect.width, photoRect.height)
     }
-    drawContain(ctx, waveform, waveformX, waveformY, waveformWidth, waveformHeight)
+    drawContain(ctx, waveform, waveformRect.x, waveformRect.y, waveformRect.width, waveformRect.height)
     ctx.fillStyle = 'white'
-    ctx.fillRect(qrX, qrY, qrWidth, qrWidth)
-    ctx.strokeStyle = '#e0e0e0'
-    ctx.lineWidth = width * 0.0036
-    ctx.strokeRect(qrX, qrY, qrWidth, qrWidth)
-    drawContain(ctx, qr, qrX + qrPadding, qrY + qrPadding, qrWidth - qrPadding * 2, qrWidth - qrPadding * 2)
+    ctx.fillRect(qrRect.x, qrRect.y, qrRect.width, qrRect.height)
+    drawContain(
+      ctx,
+      qr,
+      qrRect.x + qrPadding,
+      qrRect.y + qrPadding,
+      qrRect.width - qrPadding * 2,
+      qrRect.height - qrPadding * 2,
+    )
 
     const { jsPDF } = await import('jspdf')
     const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [148, 100] })
@@ -167,13 +165,13 @@ onMounted(() => {
 <template>
   <div v-if="showCard" class="postcard-wrapper">
     <div class="postcard">
-      <div v-if="fullImageUrl" class="postcard-image">
+      <div v-if="fullImageUrl" class="postcard-image" :style="regionStyle(CARD_REGIONS.photo)">
         <img :src="fullImageUrl" alt="关联图片" />
       </div>
-      <div class="postcard-waveform">
-        <WaveformCanvas ref="waveformRef" :audio-url="audioUrl" :height="80" :width="400" color-theme="primary" />
+      <div class="postcard-waveform" :style="regionStyle(CARD_REGIONS.waveform)">
+        <WaveformCanvas ref="waveformRef" :audio-url="audioUrl" :height="194" :width="1048" color-theme="card" />
       </div>
-      <div class="postcard-qr">
+      <div class="postcard-qr" :style="regionStyle(CARD_REGIONS.qr)">
         <img v-if="audioQrDataUrl" :src="audioQrDataUrl" alt="音频二维码" />
       </div>
     </div>
@@ -199,59 +197,40 @@ onMounted(() => {
   width: 148mm;
   height: 100mm;
   position: relative;
-  background: url('/mingxinpian.png') center/cover no-repeat;
+  /* 底图已按 148:100 预处理，直接拉满即可与打印 PDF 完全对齐 */
+  background: url('/mingxinpian.jpg') center/100% 100% no-repeat;
   box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   overflow: hidden;
 }
 
-.postcard-image {
+/* 三个区域的坐标统一来自脚本里的 CARD_REGIONS，避免与打印 PDF 出现两份参数 */
+.postcard-image,
+.postcard-waveform,
+.postcard-qr {
   position: absolute;
-  left: 12.2%;
-  top: 15%;
-  width: 28%;
-  height: 53%;
-  overflow: hidden;
-  border: 2px dashed rgba(70,130,180,0.6);
-  border-radius: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+}
+
+/* 二维码区域画白底遮盖底图灰块，给二维码留出完整静区（与 PDF 一致的 4% 边距） */
+.postcard-qr {
+  background: #fff;
+  padding: 4%;
 }
 
 .postcard-image img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-}
-
-.postcard-waveform {
-  position: absolute;
-  left: 11%;
-  top: 67%;
-  width: 28%;
-  height: 16%;
-  display: flex;
-  align-items: center;
+  /* 完整显示照片，不裁切 */
+  object-fit: contain;
 }
 
 .postcard-waveform :deep(.waveform-canvas) {
   width: 100%;
   height: 100%;
-}
-
-.postcard-qr {
-  position: absolute;
-  right: 22.5%;
-  top: 33%;
-  width: 18%;
-  aspect-ratio: 1;
-  background: white;
-  border: 2px solid #e0e0e0;
-  border-radius: 4px;
-  padding: 4%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: 0;
 }
 
 .postcard-qr img {

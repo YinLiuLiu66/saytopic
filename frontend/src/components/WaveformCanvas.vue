@@ -12,12 +12,12 @@ const canvasRef = ref(null)
 let audioContext = null
 
 const themes = {
-  // 配合明信片新底图：底图虚线框与寄语横线的深宝蓝色，背景透明
+  // 明信片用主题：深灰线条，背景透明，让声纹在纸白底图上保持中性
   card: {
-    line: '#1E35B0',
-    fill: 'rgba(30, 53, 176, 0.12)',
+    line: '#333333',
+    fill: 'rgba(51, 51, 51, 0.12)',
     bg: 'transparent',
-    midLine: 'rgba(30, 53, 176, 0.25)',
+    midLine: 'rgba(51, 51, 51, 0.25)',
   },
   primary: {
     line: '#5AB4D9',

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import QRCode from 'qrcode'
 import AudioRecorder from '../components/AudioRecorder.vue'
 import CameraCapture from '../components/CameraCapture.vue'
@@ -8,14 +8,29 @@ import QrCodeCard from '../components/QrCodeCard.vue'
 const audioUrl = ref('')
 const filename = ref('')
 const imageUrl = ref('')
-const imageUploaded = ref(false)
-const showUploadQr = ref(false)
 const uploadQrDataUrl = ref('')
 const recorderKey = ref(0)
+const step = ref('record') // record | image | card
+const stageScale = ref(1)
 let pollingTimer = null
 
-const showImageSection = computed(() => audioUrl.value && !imageUploaded.value)
-const imageUploadPath = computed(() => {
+// 八字艺术字背景：左右两列竖排，不旋转，右列整体下移错开
+const BG_COLUMNS = [
+  { side: 'left', chars: ['立', '德', '思', '源'] },
+  { side: 'right', chars: ['感', '恩', '笃', '行'] },
+]
+
+const stageStyle = computed(() => ({
+  transform: `scale(${stageScale.value})`,
+}))
+
+// 小于基准分辨率时整体等比缩放，保证单屏内按钮不被裁掉
+function updateStageScale() {
+  const scale = Math.min(1, window.innerWidth / 1200, window.innerHeight / 700)
+  stageScale.value = scale
+}
+
+const uploadQrTarget = computed(() => {
   if (!filename.value) return ''
   const base = filename.value.replace(/\.[^.]+$/, '')
   return `${window.location.origin}/upload-image/${base}`
@@ -26,29 +41,27 @@ function resetCreation() {
   audioUrl.value = ''
   filename.value = ''
   imageUrl.value = ''
-  imageUploaded.value = false
-  showUploadQr.value = false
   uploadQrDataUrl.value = ''
+  step.value = 'record'
   recorderKey.value++
-  window.scrollTo(0, 0)
 }
 
 function onAudioUploaded({ url, filename: name }) {
+  if (step.value !== 'record') return
   audioUrl.value = url
   filename.value = name
-  showUploadQr.value = true
+  step.value = 'image'
   generateUploadQr()
   startPolling()
 }
 
 async function generateUploadQr() {
-  if (imageUploadPath.value) {
-    uploadQrDataUrl.value = await QRCode.toDataURL(imageUploadPath.value, {
-      width: 200,
-      margin: 2,
-      color: { dark: '#2D3748', light: '#ffffff' },
-    })
-  }
+  if (!uploadQrTarget.value) return
+  uploadQrDataUrl.value = await QRCode.toDataURL(uploadQrTarget.value, {
+    width: 200,
+    margin: 2,
+    color: { dark: '#2D3748', light: '#ffffff' },
+  })
 }
 
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp']
@@ -63,10 +76,7 @@ function startPolling() {
         try {
           const res = await fetch(url, { method: 'HEAD' })
           if (res.ok) {
-            imageUrl.value = url
-            imageUploaded.value = true
-            showUploadQr.value = false
-            stopPolling()
+            showCard(url)
             return
           }
         } catch (e) {
@@ -86,26 +96,49 @@ function stopPolling() {
   }
 }
 
-function skipImage() {
+function showCard(url) {
+  if (step.value === 'card') return
   stopPolling()
-  imageUploaded.value = true
-  showUploadQr.value = false
+  if (url) imageUrl.value = url
+  step.value = 'card'
 }
 
-function onImageCaptured({ url, filename }) {
-  stopPolling()
-  imageUrl.value = url
-  imageUploaded.value = true
-  showUploadQr.value = false
+function skipImage() {
+  showCard('')
 }
+
+function onImageCaptured({ url }) {
+  showCard(url)
+}
+
+onMounted(() => {
+  updateStageScale()
+  window.addEventListener('resize', updateStageScale)
+})
 
 onUnmounted(() => {
   stopPolling()
+  window.removeEventListener('resize', updateStageScale)
 })
 </script>
 
 <template>
   <div class="home">
+    <!-- 校园线稿：底部对齐，压在艺术字下面 -->
+    <img class="bg-building" src="/campus-building.png" alt="" aria-hidden="true" />
+
+    <!-- 八字艺术字背景：左右两列竖排 -->
+    <div class="bg-text" aria-hidden="true">
+      <div
+        v-for="col in BG_COLUMNS"
+        :key="col.side"
+        class="bg-col"
+        :class="`bg-col-${col.side}`"
+      >
+        <span v-for="ch in col.chars" :key="ch">{{ ch }}</span>
+      </div>
+    </div>
+
     <!-- 装饰背景元素 -->
     <div class="bg-decor">
       <div class="bg-circle bg-circle-1"></div>
@@ -113,129 +146,183 @@ onUnmounted(() => {
       <div class="bg-circle bg-circle-3"></div>
     </div>
 
-    <!-- 主内容区 -->
-    <main class="home-main">
-      <!-- Hero 标题区 -->
-      <header class="hero">
-        <div class="hero-badge">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-            <line x1="12" y1="19" x2="12" y2="23"/>
-            <line x1="8" y1="23" x2="16" y2="23"/>
-          </svg>
-          <span>声音家书</span>
-        </div>
-        <h1 class="hero-title">立德思源，感恩笃行</h1>
-        <p class="hero-desc">
-          录下你的感恩之声，生成专属二维码明信片，让声音穿越时空温暖人心
-        </p>
-      </header>
+    <!-- 顶部徽章 + 底部页脚（绝对定位，不参与单屏布局） -->
+    <div class="hero-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+      <span>声音家书</span>
+    </div>
 
-      <!-- 录音区域 -->
-      <section class="section recorder-section">
-        <AudioRecorder :key="recorderKey" @uploaded="onAudioUploaded" />
-      </section>
+    <footer class="home-footer">
+      <p>SayTopic - 声音家书，传递感恩</p>
+    </footer>
 
-      <!-- 图片上传二维码区域（可选） -->
-      <Transition name="slide-up">
-        <section v-if="showImageSection" class="section image-section">
-          <div class="section-header">
-            <div class="section-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <polyline points="21 15 16 10 5 21"/>
-              </svg>
-            </div>
-            <div>
-              <h3 class="section-title">添加一张照片</h3>
-              <p class="section-desc">为这段声音配上专属图片（可选）</p>
-            </div>
+    <!-- 单屏舞台 -->
+    <div class="stage" :style="stageStyle">
+      <div class="split" :class="`step-${step}`">
+        <!-- 左栏：电话亭（始终存在） -->
+        <section class="pane pane-left">
+          <div class="pane-content pane-content-left">
+            <AudioRecorder :key="recorderKey" @uploaded="onAudioUploaded" />
           </div>
-          <div class="upload-options">
-            <div class="upload-option">
-              <h4 class="option-title">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                  <circle cx="12" cy="13" r="4"/>
-                </svg>
-                电脑拍照
-              </h4>
-              <CameraCapture
-                :audio-filename="filename"
-                @captured="onImageCaptured"
+        </section>
+
+        <!-- 右栏：图片上传 / 明信片 -->
+        <section class="pane pane-right">
+          <Transition name="pane-swap" mode="out-in">
+            <div v-if="step === 'image'" key="image" class="pane-content">
+              <div class="section-header">
+                <div class="section-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="section-title">添加一张照片</h3>
+                  <p class="section-desc">为这段声音配上专属图片（可选）</p>
+                </div>
+              </div>
+              <div class="upload-options">
+                <div class="upload-option">
+                  <h4 class="option-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    电脑拍照
+                  </h4>
+                  <CameraCapture
+                    :audio-filename="filename"
+                    @captured="onImageCaptured"
+                  />
+                </div>
+                <div class="upload-option-divider">
+                  <span class="divider-text">或</span>
+                </div>
+                <div class="upload-option">
+                  <h4 class="option-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                      <rect x="7" y="7" width="3" height="3"/>
+                      <rect x="14" y="7" width="3" height="3"/>
+                      <rect x="7" y="14" width="10" height="3"/>
+                    </svg>
+                    扫码上传
+                  </h4>
+                  <div class="qr-upload">
+                    <div class="qr-frame">
+                      <img v-if="uploadQrDataUrl" :src="uploadQrDataUrl" alt="图片上传二维码" />
+                    </div>
+                    <p class="qr-hint">用手机扫描二维码上传照片</p>
+                  </div>
+                </div>
+              </div>
+              <button class="skip-btn" @click="skipImage">
+                跳过，直接生成明信片
+              </button>
+            </div>
+
+            <div v-else-if="step === 'card'" key="card" class="pane-content">
+              <div class="section-header center">
+                <div class="section-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                    <path d="M22 4L12 13l-10-9"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="section-title">你的声音明信片</h3>
+                  <p class="section-desc">扫码即可播放这段感恩之声</p>
+                </div>
+              </div>
+              <QrCodeCard
+                :audio-url="audioUrl"
+                :filename="filename"
+                :image-url="imageUrl"
+                @printed="resetCreation"
               />
             </div>
-            <div class="upload-option-divider">
-              <span class="divider-text">或</span>
-            </div>
-            <div class="upload-option">
-              <h4 class="option-title">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                  <rect x="7" y="7" width="3" height="3"/>
-                  <rect x="14" y="7" width="3" height="3"/>
-                  <rect x="7" y="14" width="10" height="3"/>
-                </svg>
-                扫码上传
-              </h4>
-              <div class="qr-upload">
-                <div class="qr-frame">
-                  <img v-if="uploadQrDataUrl" :src="uploadQrDataUrl" alt="图片上传二维码" />
-                </div>
-                <p class="qr-hint">用手机扫描二维码上传照片</p>
-              </div>
-            </div>
-          </div>
-          <button class="skip-btn" @click="skipImage">
-            跳过，直接生成明信片
-          </button>
+          </Transition>
         </section>
-      </Transition>
-
-      <!-- 明信片区域 -->
-      <Transition name="slide-up">
-        <section v-if="audioUrl && imageUploaded" class="section card-section">
-          <div class="section-header center">
-            <div class="section-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                <rect x="2" y="4" width="20" height="16" rx="2"/>
-                <path d="M22 4L12 13l-10-9"/>
-              </svg>
-            </div>
-            <div>
-              <h3 class="section-title">你的声音明信片</h3>
-              <p class="section-desc">扫码即可播放这段感恩之声</p>
-            </div>
-          </div>
-          <QrCodeCard
-            :audio-url="audioUrl"
-            :filename="filename"
-            :image-url="imageUrl"
-            @printed="resetCreation"
-          />
-        </section>
-      </Transition>
-
-      <!-- 页脚 -->
-      <footer class="home-footer">
-        <p>SayTopic - 声音家书，传递感恩</p>
-      </footer>
-    </main>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .home {
-  position: relative;
-  min-height: 100vh;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
   padding: 0 16px;
+
+  /* 布局旋钮：单栏内容宽度、两栏内容之间的空隙 */
+  --pane-content-width: 560px;
+  --pane-gap: 300px;
+}
+
+/* ===== 校园线稿背景（贴在页面底部，位于艺术字下层） ===== */
+.bg-building {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: none;
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ===== 八字艺术字背景（左右两列竖排，蓝金渐变填充） ===== */
+.bg-text {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+  user-select: none;
+}
+
+.bg-col {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 200px;
+  font-family: var(--font-brush);
+  font-size: clamp(96px, 7.2vw, 138px);
+  line-height: 1.1;
+  /* 一列四个字共用一条竖向渐变，形成从上到下蓝转金 */
+  background: linear-gradient(180deg, #2F6FC4 0%, #4A90D9 38%, #A98A3C 72%, #C9A227 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  opacity: 0.42;
+}
+
+.bg-col span {
+  color: transparent;
+}
+
+.bg-col-left {
+  left: 2%;
+  top: 7vh;
+}
+
+.bg-col-right {
+  right: 2%;
+  top: calc(7vh + 110px);
 }
 
 /* ===== 装饰背景 ===== */
 .bg-decor {
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
   overflow: hidden;
@@ -282,34 +369,13 @@ onUnmounted(() => {
   75% { transform: translate(15px, 10px); }
 }
 
-/* ===== 主内容 ===== */
-.home-main {
-  position: relative;
-  z-index: 1;
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 40px 0 60px;
-}
-
-/* ===== Hero ===== */
-.hero {
-  text-align: center;
-  margin-bottom: 48px;
-  animation: hero-enter 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes hero-enter {
-  0% {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
+/* ===== 顶部徽章 / 底部页脚 ===== */
 .hero-badge {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -320,39 +386,124 @@ onUnmounted(() => {
   color: var(--primary-600);
   font-size: 13px;
   font-weight: 600;
-  margin-bottom: 20px;
 }
 
-.hero-title {
-  font-family: var(--font-display);
-  font-size: 40px;
-  font-weight: 700;
-  color: var(--neutral-800);
+.home-footer {
+  position: absolute;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  text-align: center;
+  font-size: 12px;
+  color: var(--neutral-400);
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
+}
+
+/* ===== 单屏舞台 ===== */
+.stage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  transform-origin: center;
+}
+
+.split {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 阶段 0：电话亭居中，右栏隐藏。位移 = 内容半宽 + 间隙一半，保证电话亭落在屏幕正中 */
+.split.step-record {
+  transform: translateX(calc(var(--pane-content-width) / 2 + var(--pane-gap) / 2));
+}
+
+.split.step-image,
+.split.step-card {
+  transform: translateX(0);
+}
+
+.pane {
+  width: 50%;
+  height: 100%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 两栏内容各自向屏幕中间靠，中间只留 --pane-gap；整体仍关于屏幕中心对称 */
+.pane-left {
+  justify-content: flex-end;
+  padding-right: calc(var(--pane-gap) / 2);
+}
+
+.pane-right {
+  justify-content: flex-start;
+  padding-left: calc(var(--pane-gap) / 2);
+}
+
+.split.step-record .pane-right {
+  opacity: 0;
+  transform: translateX(30%);
+  pointer-events: none;
+}
+
+.pane-content {
+  width: 100%;
+  max-width: var(--pane-content-width);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 电话亭内部尺寸自撑且带 margin auto，需要显式撑满容器，否则会缩成内容宽 */
+.pane-content-left :deep(.recorder) {
+  width: 100%;
   margin: 0;
-  line-height: 1.3;
-  letter-spacing: 6px;
 }
 
-.hero-desc {
-  font-size: 15px;
-  color: var(--neutral-500);
-  margin: 16px 0 0;
-  max-width: 400px;
-  margin-left: auto;
-  margin-right: auto;
-  line-height: 1.7;
+/* 右栏内容切换：旧内容向左滑出，新内容从右滑入 */
+.pane-swap-enter-active {
+  animation: pane-in 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pane-swap-leave-active {
+  animation: pane-out 0.3s ease-in;
+}
+
+@keyframes pane-in {
+  0% {
+    opacity: 0;
+    transform: translateX(48px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pane-out {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-48px);
+  }
 }
 
 /* ===== 分段 ===== */
-.section {
-  margin-bottom: 40px;
-}
-
 .section-header {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .section-header.center {
@@ -360,13 +511,9 @@ onUnmounted(() => {
   text-align: center;
 }
 
-.section-header.center .section-header {
-  flex-direction: column;
-}
-
 .section-icon {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -377,7 +524,7 @@ onUnmounted(() => {
 }
 
 .section-title {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--neutral-700);
   margin: 0 0 2px;
@@ -390,10 +537,6 @@ onUnmounted(() => {
 }
 
 /* ===== 图片上传区域 ===== */
-.image-section {
-  animation: section-appear 0.5s ease-out;
-}
-
 .upload-options {
   display: flex;
   gap: 20px;
@@ -405,7 +548,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 24px 16px;
+  padding: 20px 16px;
   background: white;
   border: 2px dashed var(--primary-200);
   border-radius: var(--radius-md);
@@ -418,7 +561,7 @@ onUnmounted(() => {
   font-size: 14px;
   font-weight: 600;
   color: var(--neutral-600);
-  margin: 0 0 16px;
+  margin: 0 0 14px;
 }
 
 .upload-option-divider {
@@ -427,7 +570,7 @@ onUnmounted(() => {
   justify-content: center;
   flex-shrink: 0;
   width: 40px;
-  padding-top: 80px;
+  padding-top: 70px;
 }
 
 .divider-text {
@@ -443,8 +586,8 @@ onUnmounted(() => {
 }
 
 .qr-frame {
-  width: 160px;
-  height: 160px;
+  width: 150px;
+  height: 150px;
   padding: 8px;
   background: white;
   border: 2px solid var(--primary-200);
@@ -466,7 +609,7 @@ onUnmounted(() => {
 
 .skip-btn {
   display: block;
-  margin: 16px auto 0;
+  margin: 14px auto 0;
   padding: 8px 20px;
   background: transparent;
   border: 1.5px dashed var(--neutral-300);
@@ -481,81 +624,5 @@ onUnmounted(() => {
   border-color: var(--primary-400);
   color: var(--primary-500);
   background: var(--primary-100);
-}
-
-/* ===== 明信片区域 ===== */
-.card-section {
-  margin-top: 48px;
-}
-
-/* ===== 过渡动画 ===== */
-.slide-up-enter-active {
-  animation: slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.slide-up-leave-active {
-  animation: slide-up 0.3s ease-in reverse;
-}
-
-@keyframes slide-up {
-  0% {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes section-appear {
-  0% {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ===== 页脚 ===== */
-.home-footer {
-  text-align: center;
-  padding: 40px 0 0;
-  font-size: 12px;
-  color: var(--neutral-400);
-  font-family: var(--font-mono);
-  letter-spacing: 1px;
-}
-
-/* ===== 响应式 ===== */
-@media (max-width: 480px) {
-  .home-main {
-    padding: 24px 0 40px;
-  }
-
-  .hero-title {
-    font-size: 28px;
-    letter-spacing: 4px;
-  }
-
-  .hero-desc {
-    font-size: 14px;
-  }
-
-  .section-header {
-    gap: 10px;
-  }
-
-  .upload-options {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .upload-option-divider {
-    width: auto;
-    padding-top: 0;
-  }
 }
 </style>

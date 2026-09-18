@@ -1,5 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&family=Courier+Prime:wght@400;700&display=swap');
 
+/* 首页八字艺术字：马善政毛笔楷书，只包含「立德思源感恩笃行」八个字的子集（7796 字节） */
+@font-face {
+  font-family: 'Ma Shan Zheng Subset';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/mashanzheng-8chars.ttf') format('truetype');
+}
+
 :root {
   --primary-100: #E8F4FC;
   --primary-200: #C5E4F7;
@@ -37,6 +46,8 @@
   --radius-full: 9999px;
 
   --font-display: 'Playfair Display', 'Georgia', serif;
+  /* 首页八字艺术字：马善政毛笔楷书，仅包含「立德思源感恩笃行」八个字的子集（7.8KB，自托管） */
+  --font-brush: 'Ma Shan Zheng Subset', 'Ma Shan Zheng', var(--font-display);
   --font-body: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   --font-mono: 'Courier Prime', 'Courier New', monospace;
 }

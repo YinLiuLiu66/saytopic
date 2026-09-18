@@ -103,10 +103,6 @@ function showCard(url) {
   step.value = 'card'
 }
 
-function skipImage() {
-  showCard('')
-}
-
 function onImageCaptured({ url }) {
   showCard(url)
 }
@@ -223,9 +219,6 @@ onUnmounted(() => {
                   </div>
                 </div>
               </div>
-              <button class="skip-btn" @click="skipImage">
-                跳过，直接生成明信片
-              </button>
             </div>
 
             <div v-else-if="step === 'card'" key="card" class="pane-content">
@@ -540,7 +533,8 @@ onUnmounted(() => {
 .upload-options {
   display: flex;
   gap: 20px;
-  align-items: flex-start;
+  /* 两侧卡片等高，视觉尺寸一致 */
+  align-items: stretch;
 }
 
 .upload-option {
@@ -568,14 +562,15 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  align-self: center;
   flex-shrink: 0;
   width: 40px;
-  padding-top: 70px;
 }
 
 .divider-text {
-  font-size: 13px;
-  color: var(--neutral-400);
+  font-size: 20px;
+  font-weight: 600;
+  color: #000;
 }
 
 .qr-upload {
@@ -586,7 +581,7 @@ onUnmounted(() => {
 }
 
 .qr-frame {
-  width: 150px;
+  width: 200px;
   height: 150px;
   padding: 8px;
   background: white;
@@ -605,24 +600,5 @@ onUnmounted(() => {
   color: var(--neutral-500);
   margin: 0;
   text-align: center;
-}
-
-.skip-btn {
-  display: block;
-  margin: 14px auto 0;
-  padding: 8px 20px;
-  background: transparent;
-  border: 1.5px dashed var(--neutral-300);
-  border-radius: var(--radius-full);
-  color: var(--neutral-400);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.skip-btn:hover {
-  border-color: var(--primary-400);
-  color: var(--primary-500);
-  background: var(--primary-100);
 }
 </style>

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import SiteFooter from '../components/SiteFooter.vue'
 
 const route = useRoute()
 const audioFilename = computed(() => route.params.audioFilename)
@@ -209,6 +210,8 @@ onMounted(() => {
         </div>
       </main>
     </Transition>
+
+    <SiteFooter />
   </div>
 </template>
 

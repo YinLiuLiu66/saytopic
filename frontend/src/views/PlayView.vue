@@ -2,6 +2,7 @@
 import { computed, ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import WaveformCanvas from '../components/WaveformCanvas.vue'
+import SiteFooter from '../components/SiteFooter.vue'
 
 const route = useRoute()
 const filename = computed(() => route.params.filename)
@@ -162,9 +163,7 @@ onMounted(() => {
         </div>
 
         <!-- 页脚 -->
-        <footer class="play-footer">
-          <p>SayTopic - 声音家书，传递感恩</p>
-        </footer>
+        <SiteFooter />
       </main>
     </Transition>
   </div>
@@ -176,7 +175,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px;
+  padding: 24px 16px 44px;
   position: relative;
   overflow: hidden;
 }
@@ -464,15 +463,6 @@ onMounted(() => {
   color: var(--primary-500);
   letter-spacing: 2px;
   margin: 0;
-}
-
-/* 页脚 */
-.play-footer {
-  margin-top: 32px;
-  font-size: 12px;
-  color: var(--neutral-400);
-  font-family: var(--font-mono);
-  letter-spacing: 1px;
 }
 
 /* ===== 响应式 ===== */

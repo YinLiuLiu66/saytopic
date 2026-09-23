@@ -4,6 +4,7 @@ import QRCode from 'qrcode'
 import AudioRecorder from '../components/AudioRecorder.vue'
 import CameraCapture from '../components/CameraCapture.vue'
 import QrCodeCard from '../components/QrCodeCard.vue'
+import SiteFooter from '../components/SiteFooter.vue'
 
 const audioUrl = ref('')
 const filename = ref('')
@@ -153,9 +154,7 @@ onUnmounted(() => {
       <span>声音家书</span>
     </div>
 
-    <footer class="home-footer">
-      <p>SayTopic - 声音家书，传递感恩</p>
-    </footer>
+    <SiteFooter />
 
     <!-- 单屏舞台 -->
     <div class="stage" :style="stageStyle">
@@ -379,19 +378,6 @@ onUnmounted(() => {
   color: var(--primary-600);
   font-size: 13px;
   font-weight: 600;
-}
-
-.home-footer {
-  position: absolute;
-  bottom: 16px;
-  left: 0;
-  right: 0;
-  z-index: 2;
-  text-align: center;
-  font-size: 12px;
-  color: var(--neutral-400);
-  font-family: var(--font-mono);
-  letter-spacing: 1px;
 }
 
 /* ===== 单屏舞台 ===== */

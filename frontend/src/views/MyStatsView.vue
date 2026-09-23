@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import SiteFooter from '../components/SiteFooter.vue'
 
 const router = useRouter()
 const username = ref(localStorage.getItem('saytopic_username') || '')
@@ -116,6 +117,8 @@ onMounted(loadStats)
       <p>长按下方图片保存到手机相册</p>
       <img :src="credentialUrl" :alt="`${username} 已听 ${listenedCount} 条录音`" />
     </section>
+
+    <SiteFooter />
   </main>
 </template>
 

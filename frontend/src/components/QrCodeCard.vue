@@ -19,9 +19,15 @@ const waveformRef = ref(null)
 // 明信片各区域在底图中的位置（百分比），HTML 预览与打印 PDF 共用这一份坐标
 const CARD_REGIONS = {
   photo: { left: 12.664, top: 20.833, width: 27.138, height: 45.037 },
-  waveform: { left: 51.85, top: 58.8, width: 41.94, height: 11.5 },
-  qr: { left: 51.85, top: 29.04, width: 15.83, height: 23.16 },
+  waveform: { left: 51.85, top: 65.2, width: 41.94, height: 10.4 },
+  qr: { left: 56.59, top: 37.35, width: 17.38, height: 27.35 },
 }
+
+// 卡片宽度固定 148mm；高度不写死，按底图实际比例推得，保证打印不变形
+const CARD_WIDTH_MM = 148
+// 与 frontend/public/mingxinpian.jpg 的实际比例一致（2048 × 1360 ≈ 1.5059）；更换底图时须同步
+const CARD_ASPECT = 2048 / 1360
+const cardHeightMm = CARD_WIDTH_MM / CARD_ASPECT
 
 function regionStyle(region) {
   return {
@@ -138,8 +144,10 @@ async function print() {
     )
 
     const { jsPDF } = await import('jspdf')
-    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [148, 100] })
-    pdf.addImage(canvas, 'PNG', 0, 0, 148, 100)
+    // 页高按底图实际比例推得，避免打印时被拉伸（宽度固定 148mm）
+    const pageHeight = (CARD_WIDTH_MM * background.naturalHeight) / background.naturalWidth
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [CARD_WIDTH_MM, pageHeight] })
+    pdf.addImage(canvas, 'PNG', 0, 0, CARD_WIDTH_MM, pageHeight)
     win.location.href = pdf.output('bloburl')
     emit('printed')
   } catch (error) {
@@ -164,12 +172,12 @@ onMounted(() => {
 
 <template>
   <div v-if="showCard" class="postcard-wrapper">
-    <div class="postcard">
+    <div class="postcard" :style="{ height: `${cardHeightMm}mm` }">
       <div v-if="fullImageUrl" class="postcard-image" :style="regionStyle(CARD_REGIONS.photo)">
         <img :src="fullImageUrl" alt="关联图片" />
       </div>
       <div class="postcard-waveform" :style="regionStyle(CARD_REGIONS.waveform)">
-        <WaveformCanvas ref="waveformRef" :audio-url="audioUrl" :height="194" :width="1048" color-theme="card" />
+        <WaveformCanvas ref="waveformRef" :audio-url="audioUrl" :height="141" :width="859" color-theme="card" />
       </div>
       <div class="postcard-qr" :style="regionStyle(CARD_REGIONS.qr)">
         <img v-if="audioQrDataUrl" :src="audioQrDataUrl" alt="音频二维码" />
@@ -195,9 +203,8 @@ onMounted(() => {
 
 .postcard {
   width: 148mm;
-  height: 100mm;
   position: relative;
-  /* 底图已按 148:100 预处理，直接拉满即可与打印 PDF 完全对齐 */
+  /* 底图直接拉满卡片；高度由脚本按底图实际比例给出，保证与打印 PDF 一致 */
   background: url('/mingxinpian.jpg') center/100% 100% no-repeat;
   box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   overflow: hidden;

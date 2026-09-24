@@ -1,6 +1,6 @@
 <script setup>
 // 全站底部信息：品牌行 + 工信部备案号（备案号必须链接到工信部官网，见 docs/部署文档.md）
-const ICP_NUMBER = '冀ICP备2026039990号'
+const ICP_NUMBER = '冀ICP备2026039990号-1'
 const ICP_LINK = 'https://beian.miit.gov.cn/'
 </script>
 
